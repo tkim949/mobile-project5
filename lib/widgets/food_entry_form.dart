@@ -39,31 +39,39 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
 
   Widget enterNumber() {
     addDate();
-    return TextFormField(
-     autofocus: true,
-     textAlign: TextAlign.center,
-     style: TextStyle(fontSize: paddings(context)*0.8),
-     decoration: new InputDecoration(hintText: "Number of Waste Item.", alignLabelWithHint: true),
-     //textInputAction: TextInputAction.done,
-     keyboardType: TextInputType.number, //service
-     /*inputFormatters: <TextInputFormatter>[
-       WhitelistingTextInputFormatter.digitsOnly
-       ],*/
+    return Semantics(
+      label: "Number of waste food",
+      enabled: true,
+      textField: true,
+      hint: "number only with numeric keyboard",
+      child:TextFormField(
+        key: Key('userNumInput'),
+        autofocus: true,
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: paddings(context)*0.8),
+        decoration: new InputDecoration(hintText: "Number of Waste Item.", alignLabelWithHint: true),
+        //textInputAction: TextInputAction.done,
+        keyboardType: TextInputType.number, //service
+        /*inputFormatters: <TextInputFormatter>[
+          WhitelistingTextInputFormatter.digitsOnly
+          ],*/
 
-     validator: (value) {
-       var intValue = int.tryParse(value);
-       if(intValue == null) {
-         return 'Please enter a number';
-       } else{
-         return null;
-       }
-     },
-     onSaved: (value) {
-       //num = int.parse(value);
-       
-       newfood.quantity = int.tryParse(value);
-     },
-    );
+        validator: (value) {
+          var intValue = int.tryParse(value);
+          if(intValue == null) {
+            return 'Please enter a number';
+           
+          } else{
+            return null;
+          }
+        },
+        onSaved: (value) {
+          //num = int.parse(value);
+          
+          newfood.quantity = int.tryParse(value);
+        },
+        )
+   );
 
   }
 
@@ -72,7 +80,7 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
     try {
       
       StorageReference storageReference =
-        FirebaseStorage.instance.ref().child(name);
+      FirebaseStorage.instance.ref().child(name);
       StorageUploadTask uploadTask = storageReference.putFile(widget.image);
       uploadTask.onComplete.then((onValue) async {
       String url = (await storageReference.getDownloadURL()).toString();
@@ -136,19 +144,25 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
                     ),
                     child: Align(
                       alignment: Alignment.bottomCenter,
-                      child: RaisedButton(
-                        child: Icon(Icons.cloud_upload, size:paddings(context)*2),
-                                      
-                        onPressed: (){
-                          if(formKey.currentState.validate()) {
-                              formKey.currentState.save();
-                                //addDate();
-                              Firestore.instance.collection('posts').add(newfood.toMap());
+                      child: Semantics(
+                        label: 'Upload button',
+                        enabled: true,
+                        button: true,
+                        hint: 'Enables to upload a new post into firestore data and storage',
+                        child:RaisedButton(
+                          child: Icon(Icons.cloud_upload, size:paddings(context)*2),
+                                        
+                          onPressed: (){
+                            if(formKey.currentState.validate()) {
+                                formKey.currentState.save();
+                                  //addDate();
+                                Firestore.instance.collection('posts').add(newfood.toMap());
 
-                              Navigator.of(context).pop();
-                          }
-                        },
-                    ),
+                                Navigator.of(context).pop();
+                            }
+                          },
+                      ),
+                   ),
                   ),
                 ),
               );
@@ -169,16 +183,18 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
         ),
 
       body: Padding(
-                padding: EdgeInsets.all(paddings(context)*0.1),
-                child: Form(
-        key: formKey,
-        child: Column(children: <Widget>[
-         //Text("place for photo"),
-         Image.file(widget.image, height: paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill),
-         SizedBox(height: paddings(context)*0.5),
-         enterNumber(),
-         SizedBox(height: paddings(context)*5),
-         uploadButton(context),
+              padding: EdgeInsets.all(paddings(context)*0.1),
+              child: Form(
+                  key: formKey,
+                  child: Column(children: <Widget>[
+                  //Text("place for photo"),
+                  Center(child: (widget.image == null) ? 
+                    CircularProgressIndicator() :
+                    Image.file(widget.image, height: paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill),),
+                  SizedBox(height: paddings(context)*0.5),
+                  enterNumber(),
+                  SizedBox(height: paddings(context)*5),
+                  uploadButton(context),
          /*FutureBuilder(
            future: getImageRef(newfood.date.toDate().toString()),
            builder: (context, snapshot) {

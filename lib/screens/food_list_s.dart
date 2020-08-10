@@ -8,6 +8,24 @@ import '../screens/food_detail_s.dart';
 //import '../models/food_entry.dart';
 //import 'package:timeago/timeago.dart';
 import 'package:intl/intl.dart';
+//import '../screens/loading_screen.dart';
+/*
+class LoadingS extends StatelessWidget {
+  final File image;
+  LoadingS({Key key, this.image}) : super(key: key);
+
+  Widget build(BuildContext context) {
+
+     return Scaffold(
+       
+       body: Column(
+         children: [Center(child: CircularProgressIndicator()),
+                    Center(child: Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);,)
+         ],),
+         );
+
+  }
+}*/
 
 class FoodListS extends StatefulWidget {
   static const routeName = 'food_list';
@@ -22,17 +40,44 @@ class _FoodListSState extends State<FoodListS> {
   File image;
   final _picker = ImagePicker();
   PickedFile imageFile;
+  //final GlobalKey<State> _keyLoader = new GlobalKey<State>();
   
   //void _getLocalImage() async {
-  Future<void> _getLocalImage() async {
+  Future<void> _getLocalImage(BuildContext context) async {
     //image = await ImagePicker.pickImage(source: ImageSource.gallery)
     imageFile = await _picker.getImage(source: ImageSource.gallery); 
-    File select = File(imageFile.path);
-    setState( () {
-      image = select;
-    } );
+    //File select = File(imageFile.path);
+    if(imageFile != null) {
+    image = File(imageFile.path);
     Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);
     _clear();
+    
+    }
+    else {
+      print("No pick");
+    }
+    setState( () {
+      //image = select;
+    } );
+    /*
+    Image.network(
+          image.toString(),
+          loadingBuilder: (BuildContext context, Widget child,
+              ImageChunkEvent loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes
+                    : null,
+              ),
+            );
+          },
+        ); */
+    //image != null ? CircularProgressIndicator() :
+    //Navigator.push(context, MaterialPageRoute(builder: (context) => LoadingS(image: image),));
+    
   }
  
   void _clear() {
@@ -97,6 +142,7 @@ class _FoodListSState extends State<FoodListS> {
                   children: <Widget>
                   [ Expanded(
                     child: ListView.builder(
+                      key: Key('list'),
                       itemCount: snapshot.data.documents.length,
                       itemBuilder: (context, index) {
                         var post = snapshot.data.documents[index];
@@ -132,7 +178,13 @@ class _FoodListSState extends State<FoodListS> {
             ),
 
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        floatingActionButton: newEntryFab(context),
+        floatingActionButton: Semantics(
+          child: newEntryFab(context),
+          label: 'Get image Button',
+          button: true,
+          enabled: true,
+          onTapHint: 'Click to get device photos',
+        ),
         /*floatingActionButton: FutureBuilder(
                            future:   _getLocalImage(),
                            builder: (context, snapshot) {
@@ -159,7 +211,9 @@ class _FoodListSState extends State<FoodListS> {
       if(image == null) {
         return FloatingActionButton( 
               onPressed: () { 
-                _getLocalImage();
+                
+                _getLocalImage(context);
+                //CircularProgressIndicator();
                 /*
                 if(image != null) {
                   return Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);
@@ -174,7 +228,7 @@ class _FoodListSState extends State<FoodListS> {
               },
               
               child: Icon(Icons.photo_camera),  );
-      }else{
+      }else {
         return FloatingActionButton(
               onPressed: () {
                 Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);
@@ -183,6 +237,7 @@ class _FoodListSState extends State<FoodListS> {
               child: Icon(Icons.photo_camera),  );
 
       } 
+      
       /*
         return FloatingActionButton(
            

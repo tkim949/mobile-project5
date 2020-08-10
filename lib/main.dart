@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; //for the orientation
-//
+
 import 'app.dart';
+
 
 void main() {
 
