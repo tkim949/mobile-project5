@@ -9,11 +9,14 @@ class FoodDetailS extends StatelessWidget {
   //static FoodEntry fE;
   
   Widget build(BuildContext context) {
+    //throw new StateError("New Error");
     //fE = ModalRoute.of(context).settings.arguments;
     DocumentSnapshot post = ModalRoute.of(context).settings.arguments;
     //FoodEntry fE = post as FoodEntry; //.toObject(FoodEntry.class);//getValue();
     //  FoodEntry fE = ModalRoute.of(context).settings.arguments;
     return Scaffold(
+        
+         resizeToAvoidBottomInset: false,
          appBar: AppBar(
             title: Text("Food Detail Screen"),
             centerTitle: true,
@@ -31,7 +34,10 @@ class FoodDetailS extends StatelessWidget {
                       //Text(post['date'].toDate().toString()),
                       Text(DateFormat('EEE, MMMM d, y').format(post['date'].toDate()), style: TextStyle(fontWeight: FontWeight.bold, fontSize: paddings(context)*0.8)),
                       SizedBox(height: paddings(context)*0.5),
-                      Image.network(post['imageURL'],height:paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill),
+                      Semantics(
+                        child: Image.network(post['imageURL'],height:paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill),
+                        label: 'Detail food image',
+                      ),
                       SizedBox(height: paddings(context)*3),
                       Text('${post['quantity'].toString()} Item',
                            textAlign: TextAlign.center,

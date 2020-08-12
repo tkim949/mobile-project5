@@ -27,16 +27,7 @@ class Food {
   }
 
   Map<String, dynamic> toMap() {
-    /*
-    var map = new Map<String, dynamic>();
-    map['id'] = id;
-    map['date'] = date;
-    map['latitude'] = latitude;
-    map['longitude'] = longitude;
-    map['imageURL'] = imageURL;
-    map['quantity'] = quantity;
-
-    return map; */
+    
     return {
       'date': date,
       //'id':id,

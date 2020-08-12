@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_analytics/observer.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 //import 'package:image_picker/image_picker.dart';
@@ -8,23 +10,52 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/food_entry.dart';
 import 'package:location/location.dart';
 
+import 'dart:async';
+
+enum AnalyticsEventType {
+  food_post,
+}
+
+class Analytics {
+  static String _eventType;
+  static final FirebaseAnalytics analytics = FirebaseAnalytics();
+
+  static Future analyticsLogEvent(AnalyticsEventType eventType, Map<String, dynamic> paramMap) async {
+    _eventType = await _enumToString(eventType);
+    await analytics.logEvent(
+      name: _eventType,
+      parameters: paramMap,);
+  }
+  static Future _enumToString(eventType) async{
+    return eventType.toString().split('.')[1];
+  }
+}
+
 
 class FoodEntryForm extends StatefulWidget {
   final File image;
-  FoodEntryForm({Key key, this.image}) : super(key: key);
+  final FirebaseAnalytics analytics;
+  final FirebaseAnalyticsObserver observer;
+  FoodEntryForm({Key key, this.analytics, this.observer, this.image}) : super(key: key);
   @override
-  _FoodEntryFormState createState() => _FoodEntryFormState();
+  _FoodEntryFormState createState() => _FoodEntryFormState(analytics, observer);
 }
 
 class _FoodEntryFormState extends State<FoodEntryForm> {
+  _FoodEntryFormState(this.analytics, this.observer);
+ //File image;
+  final FirebaseAnalytics analytics;
+  final FirebaseAnalyticsObserver observer;
+  //final File image;
+
 
   final formKey = GlobalKey<FormState>();
-  var num;
+ // var num;
   Food newfood = Food();
-  File img;
+  //File img;
   //String url;
   LocationData locationData;
-
+  
   @override
   void initState() {
     super.initState();
@@ -37,13 +68,18 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
     setState( () {} );
   }
 
+  Future logPostCreated() async{
+    await analytics.logEvent(name: 'create_post');
+
+  }
+
   Widget enterNumber() {
-    addDate();
+    //addDate();
     return Semantics(
       label: "Number of waste food",
       enabled: true,
       textField: true,
-      hint: "number only with numeric keyboard",
+      onTapHint: "number only with numeric keyboard",
       child:TextFormField(
         key: Key('userNumInput'),
         autofocus: true,
@@ -58,8 +94,8 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
 
         validator: (value) {
           var intValue = int.tryParse(value);
-          if(intValue == null) {
-            return 'Please enter a number';
+          if(intValue == null || intValue < 1) {
+            return 'Please enter a correct number';
            
           } else{
             return null;
@@ -76,62 +112,37 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
   }
 
   Future getImageRef(String name) async{
-    //String url='';
+    
     try {
       
       StorageReference storageReference =
       FirebaseStorage.instance.ref().child(name);
-      StorageUploadTask uploadTask = storageReference.putFile(widget.image);
+      StorageUploadTask uploadTask = storageReference.putFile(widget.image); //widget.image
       uploadTask.onComplete.then((onValue) async {
       String url = (await storageReference.getDownloadURL()).toString();
-      print(url);
+      //print(url);
       newfood.imageURL = url;
-      print(newfood.imageURL);
+      //print(newfood.imageURL);
       });
-      /*await storageReference.putFile(widget.image).onComplete.catchError((onError){
-        print(onError);
-        return false;
-      });
-      url = (await storageReference.getDownloadURL()).toString();*/
-      
+       
     } catch(error){
       print(error);
-    }
-      //url = downurl.toString();
-      //newfood.imageURL = url.toString();
-      //addURL(url);
-      
-      /*
-      StorageReference storageReference =
-        FirebaseStorage.instance.ref().child('EXAMPLE2.jpg');
-      StorageUploadTask uploadTask = storageReference.putFile(widget.image);
-      await uploadTask.onComplete;
-      url = await storageReference.getDownloadURL(); */
-      //newfood.imageURL = url;
-   
+    }    
   }
-  /*
-  void addURL(String url) {
-    if(url != null) {
-     newfood.imageURL = url;
-    }
-  }*/
+  
 
   void addDate() async {
     //newfood.date = new Timestamp.fromMicrosecondsSinceEpoch(DateTime.now().millisecondsSinceEpoch);
     newfood.date = Timestamp.fromDate(new DateTime.now());
-    //newfood.date = new DateTime.now().toString();
     newfood.latitude = locationData.latitude;
     newfood.longitude = locationData.longitude;
-    //getImageRef(newfood.date.toDate().toString());
-    //newfood.imageURL = url;
-    //print(newfood.imageURL);
+    //await getImageRef(newfood.date.toDate().toString());
   }
 
   Widget uploadButton(BuildContext context) {
-    return FutureBuilder(
+     return FutureBuilder(
            future: getImageRef(newfood.date.toDate().toString()),
-           builder: (context, snapshot) {
+           builder: (context, snapshot) { 
            return Expanded(
                  child: Container(
                     decoration: BoxDecoration(
@@ -148,7 +159,7 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
                         label: 'Upload button',
                         enabled: true,
                         button: true,
-                        hint: 'Enables to upload a new post into firestore data and storage',
+                        onTapHint: 'Enables to upload a new post into firestore data and storage',
                         child:RaisedButton(
                           child: Icon(Icons.cloud_upload, size:paddings(context)*2),
                                         
@@ -157,7 +168,9 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
                                 formKey.currentState.save();
                                   //addDate();
                                 Firestore.instance.collection('posts').add(newfood.toMap());
-
+                                //logPostCreated();
+                                //_analyticsParameter = {'post_upload': 1};
+                                Analytics.analyticsLogEvent(AnalyticsEventType.food_post, {'post_upload': 1});
                                 Navigator.of(context).pop();
                             }
                           },
@@ -174,6 +187,7 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
 
   @override
   Widget build(BuildContext context) {
+    addDate();
     
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -182,79 +196,71 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
         centerTitle: true,
         ),
 
-      body: Padding(
+      body: 
+           Padding(
               padding: EdgeInsets.all(paddings(context)*0.1),
               child: Form(
                   key: formKey,
                   child: Column(children: <Widget>[
                   //Text("place for photo"),
-                  Center(child: (widget.image == null) ? 
-                    CircularProgressIndicator() :
-                    Image.file(widget.image, height: paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill),),
+                  //CircularProgressIndicator(value: 1.0),
+                  Center(child: 
+                       Semantics(
+                        label: 'Food Image',
+                        //image: true,
+                        child: (widget.image == null) ? 
+                          CircularProgressIndicator() :
+                          Image.file(widget.image, height: paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill),),),
+                      
+                          //Image.network(newfood.imageURL, height:paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill),),),
+                  //loadImgURL(context);
+                  
                   SizedBox(height: paddings(context)*0.5),
                   enterNumber(),
                   SizedBox(height: paddings(context)*5),
                   uploadButton(context),
-         /*FutureBuilder(
-           future: getImageRef(newfood.date.toDate().toString()),
-           builder: (context, snapshot) {
-           return Align(
-                  alignment: Alignment.bottomCenter,
-                  child:uploadButton(context));},
-         ),*/
-        ],),
+        
+          ],),
+         ),
+
+      ),
       
-      /*floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton:Padding(
-        padding: EdgeInsets.all(5),
-        child: addUploadFab(context),
-        )*/
-      )
-     ),
-     /*bottomNavigationBar: BottomAppBar(
-       shape: CircularNotchedRectangle(),
-       notchMargin: paddings(context)* 3,
-       //primaryColor: Colors.blue,
-       child: Icon(Icons.cloud_upload, size: 20),
-             //uploadButton(context),
-     ),*/
     );
   }
+  /*Try to use loading builder with image.Network for circular progree indicator.
+    But, as far as I know, it needs url, not file. 
+    Then, at this point, the app has only image file from image picker because no one would want to store file in the storage before uploading.
+    I couldn't find the url of the file that is just picked with image picker.
+    Also, the circular progress indicator at this point is not required so I didn't choose using loading builder.
+  */
+  Widget loadImgURL(BuildContext context) {
+    return 
+         FutureBuilder(
+              future: getImageRef(newfood.date.toDate().toString()),
+              builder: (context, snapshot) {
+              if(snapshot.hasData){
+                return 
+                        Image.network(newfood.imageURL, height: paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill,
+                        loadingBuilder: (BuildContext context, Widget child,
+                                        ImageChunkEvent loadingProgress) {
+                                  if(loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                         ? loadingProgress.cumulativeBytesLoaded /loadingProgress.expectedTotalBytes
+                                         : null,
+                                    ),
+                                  );
+                            } 
+                          ); //),
 
-  
-/*
-  FloatingActionButton addUploadFab(BuildContext context) {
-    return FloatingActionButton(
-        
-        onPressed: (){
-          if(formKey.currentState.validate()) {
-            formKey.currentState.save();
-            addDate();
-            Firestore.instance.collection('posts').add(newfood.toMap());
-            Navigator.of(context).pop();
-            }
-          //else {
-          //  Text("Number input needed!");
-         // }
-        },
-        child: Padding(
-                padding: EdgeInsets.all(4),
-                  child: Icon(Icons.cloud_upload, size: 50),
-                  ),
-           
-
-          
-          
-            /*
-            {
-            'date': Timestamp.fromMicrosecondsSinceEpoch(DateTime.now().millisecondsSinceEpoch),
-            'imageURL': 'testforURLfromapp',
-            'quantity': num,
-            'latitude': 1,
-            'longitude': 2,
-          }*/
-          );
-  } */
+                        }
+                        else {
+                          return Center(child: CircularProgressIndicator());
+                        } 
+                  }
+            );
+      }
 
 }
 double paddings(BuildContext context) {

@@ -29,6 +29,24 @@ test('Test the element of Map should have appropriate values', () {
 
     expect(testFood.imageURL, matches('http'));
 
+});
+
+test('Test the element of Map should be correct type', () {
+    final date = Timestamp.fromDate(DateTime.parse('2020-01-01'));
+    final quantity = 3;
+    final latitude = 1.0;
+    final longitude = 2.0;
+    final imageURL = 'http';
+
+
+    final testFood = Food.fromMap({
+        'date' : date,
+        'imageURL' : imageURL,
+        'quantity' : quantity,
+        'latitude' : latitude,
+        'longitude' : longitude, 
+    });
+
     expect(testFood.imageURL.runtimeType, equals(String));
     expect(testFood.date.runtimeType, equals(Timestamp));
     expect(testFood.quantity.runtimeType, equals(int));

@@ -1,115 +1,80 @@
 import 'dart:io';
+import 'dart:async';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_analytics/observer.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:wasteagram/screens/food_entry_s.dart';
-//import '../screens/food_camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../screens/food_detail_s.dart';
 //import '../models/food_entry.dart';
 //import 'package:timeago/timeago.dart';
 import 'package:intl/intl.dart';
-//import '../screens/loading_screen.dart';
-/*
-class LoadingS extends StatelessWidget {
-  final File image;
-  LoadingS({Key key, this.image}) : super(key: key);
+import 'package:flutter/foundation.dart';
 
-  Widget build(BuildContext context) {
 
-     return Scaffold(
-       
-       body: Column(
-         children: [Center(child: CircularProgressIndicator()),
-                    Center(child: Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);,)
-         ],),
-         );
+  
 
-  }
-}*/
 
 class FoodListS extends StatefulWidget {
-  static const routeName = 'food_list';
+
+  FoodListS({Key key, this.analytics, this.observer}) : super(key: key);
+
+  final FirebaseAnalytics analytics;
+  final FirebaseAnalyticsObserver observer;
+  static const routeName = 'list_screen';
 
   @override
-  _FoodListSState createState() => _FoodListSState();
+  _FoodListSState createState() => _FoodListSState(analytics, observer);
 }
 
 class _FoodListSState extends State<FoodListS> {
+  _FoodListSState(this.analytics, this.observer);
   //FoodEntry foodE;
+  final FirebaseAnalyticsObserver observer;
+  final FirebaseAnalytics analytics;
 
   File image;
   final _picker = ImagePicker();
   PickedFile imageFile;
   //final GlobalKey<State> _keyLoader = new GlobalKey<State>();
-  
+  /*
+  bool _isLoading;
+  void initState() {
+    super.initState();
+    _isLoading = true;
+  } */
   //void _getLocalImage() async {
   Future<void> _getLocalImage(BuildContext context) async {
     //image = await ImagePicker.pickImage(source: ImageSource.gallery)
+    
     imageFile = await _picker.getImage(source: ImageSource.gallery); 
     //File select = File(imageFile.path);
+    print(imageFile);
     if(imageFile != null) {
     image = File(imageFile.path);
-    Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);
-    _clear();
+    print(image);
     
+    Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image,);
+    /*Navigator.push(context, 
+                   MaterialPageRoute(
+                     builder: (context) => FoodEntryS(analytics: analytics,
+                                          observer: observer, image: image),
+                     settings: RouteSettings(name: FoodEntryS.routeName),),);*/                 
+    _clear();
     }
     else {
       print("No pick");
     }
     setState( () {
       //image = select;
-    } );
-    /*
-    Image.network(
-          image.toString(),
-          loadingBuilder: (BuildContext context, Widget child,
-              ImageChunkEvent loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes
-                    : null,
-              ),
-            );
-          },
-        ); */
-    //image != null ? CircularProgressIndicator() :
-    //Navigator.push(context, MaterialPageRoute(builder: (context) => LoadingS(image: image),));
-    
+    } );  
   }
  
   void _clear() {
     setState(() => image = null);
   }
-  /*
-  Widget pickPhoto() {
-    if (image == null) {
-            return //Center(child:
-              RaisedButton(
-                child: Text('Select Photo'),
-                onPressed: () {
-                  _getLocalImage();
-                },
-            );
-          } else {
-            return //Center(child:
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Image.file(image),
-                  SizedBox(height: 5),
-                  RaisedButton(
-                    child: Text('Post it!'),
-                    onPressed: () {
-                      Navigator.of(context).pushReplacementNamed(FoodEntryS.routeName);
-                    })
-                ],    
-            );
-          }
-
-  } */
+ 
   int total = 0;
   void getNum() {
     Firestore.instance.collection('posts').snapshots().listen((snapshot) {
@@ -122,9 +87,12 @@ class _FoodListSState extends State<FoodListS> {
   }
 
   Widget build(BuildContext context) {
+    //throw new StateError("New Error");
     getNum();
+    
     return Scaffold(
-         appBar: AppBar(
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
             title: 
               Column(
               children: [Text("Food List Screen"),
@@ -132,12 +100,30 @@ class _FoodListSState extends State<FoodListS> {
              ],),
             centerTitle: true,
          ),
-        body: //Center(
-          //child: Text("Here for the food list"),),
-          StreamBuilder(
+        body: //Center(child: Timer(const Duration(milliseconds: 1000), () => 
+             bodyStream(context),
+          
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButton: Semantics(
+          child: newEntryFab(context),
+          label: 'Get image Button',
+          button: true,
+          enabled: true,
+          onTapHint: 'Click to get device photos',   
+        ),
+    );
+  }
+
+  Widget bodyStream(BuildContext context) {
+   
+    return StreamBuilder(         
             stream: Firestore.instance.collection('posts').snapshots(),
             builder: (content, snapshot) {
-              if(snapshot.hasData) {
+              if(!snapshot.hasData) {
+                 return Center(child: CircularProgressIndicator(),);
+                   
+              }
+              else {
                 return Column(
                   children: <Widget>
                   [ Expanded(
@@ -147,149 +133,60 @@ class _FoodListSState extends State<FoodListS> {
                       itemBuilder: (context, index) {
                         var post = snapshot.data.documents[index];
                         if(post != null) {
-                        return ListTile(
-                          //title: Text(timeago.format(DateTime.tryparse(post['date'].toDate().toString())).toString()),
+                          return ListTile(
                            title: Row(
                              children: <Widget>[
-                               Expanded(child:Text(DateFormat('EEEE, MMMM d, y').format(post['date'].toDate())),),
-                               //Expanded(child: Text(DateFormat.yMMMMd().format(post['date'].toDate())),),
-                               //Expanded(child: SizedBox(width: paddings(context)*0.09)),
+                               Expanded(child:Text(DateFormat('EEEE,').format(post['date'].toDate())),),
+                               Expanded(child: Text(DateFormat('MMMM d,').format(post['date'].toDate())),),
+                               Expanded(child: Text(DateFormat('y').format(post['date'].toDate())),),
                                Expanded(child: Text(post['quantity'].toString(), textAlign: TextAlign.right,),),
                                ],),
-                          //title: Text(DateTime.fromMicrosecondsSinceEpoch(post['date'].microsecondsSinceEpoch).toString()),
-                          //subtitle: Text(post['quantity'].toString()),
-                          
-                          onTap: () {
-                            
-                            Navigator.of(context).pushNamed(FoodDetailS.routeName, arguments:post);}
-                          
-                        );
-                        }
-                        else{
-                          return Center(child: CircularProgressIndicator());
-                        }
+                               
+                            onTap: () {
+                                //throw new StateError("New Error");
+                                Navigator.of(context).pushNamed(FoodDetailS.routeName, arguments:post);
+                                }    
+                           );
+                         }
+                          return Center(child: CircularProgressIndicator());  
+                      
                       },),)
 
-                  ],);
-              } else {
-                return Center(child: CircularProgressIndicator());
-              }
-            }
-            ),
-
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        floatingActionButton: Semantics(
-          child: newEntryFab(context),
-          label: 'Get image Button',
-          button: true,
-          enabled: true,
-          onTapHint: 'Click to get device photos',
-        ),
-        /*floatingActionButton: FutureBuilder(
-                           future:   _getLocalImage(),
-                           builder: (context, snapshot) {
-                           if(snapshot.data != null){
-                               return newEntryFab(context); }
-                           else {
-                               return CircularProgressIndicator();
-                           }}, ),*/
-
-        );
-
-  }
-
-  FloatingActionButton newEntryFab(BuildContext context){
-    /*
-    return FloatingActionButton(
-              onPressed: () {
-                Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);
-                _clear();
-              },
-              child: Icon(Icons.photo_camera),  ); */
-
+                  ],);  
+             } 
+          }
+       
+      );
     
-      if(image == null) {
-        return FloatingActionButton( 
-              onPressed: () { 
-                
-                _getLocalImage(context);
-                //CircularProgressIndicator();
-                /*
-                if(image != null) {
-                  return Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);
-                }
-                else {
-                  return CircularProgressIndicator();
-                }*/
-                //if(image == null) {CircularProgressIndicator();}
-                //Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);
-                //_clear();
-                
-              },
-              
-              child: Icon(Icons.photo_camera),  );
-      }else {
-        return FloatingActionButton(
-              onPressed: () {
-                Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);
-                _clear();
-              },
-              child: Icon(Icons.photo_camera),  );
-
-      } 
-      
-      /*
-        return FloatingActionButton(
-           
-              onPressed: () //=> pushNewEntry(context),
-              { 
-                //RaisedButton(
-                //onPressed: () {
-                  if(image == null) {
-                    _getLocalImage();
-                  }
-                  try {
-                    Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);
-                  } catch(error){
-                    print(error);
-                    CircularProgressIndicator();
-                  }
-                  _clear();
-                },
-                child: Icon(Icons.photo_camera),  
-          ); */
-        
-                   /*
-                    if(image == null) {
-                    _getLocalImage(); 
-                    
-                    RaisedButton(
-                      onPressed: () {
-                        if(image != null) {
-                            return  Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);}
-                        else { return Center(child: CircularProgressIndicator());
-
-                        }
-                      } 
-                      );
-                    } */
-                /*
-                if(image == null){
-                  return Center(child: CircularProgressIndicator()); }
-                else{
-                
-                Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image); }
-                //pushNewEntry(context); */
-                //_clear();
-                         
   }
-
-/*
-  void pushNewEntry(BuildContext context) {
-    Navigator.of(context).pushNamed(FoodEntryS.routeName);
+  /*
+  Widget keepPI(BuildContext context) {
+    while(isLoading) {
+    return CircularProgressIndicator(); }
+    return CircularProgressIndicator();
   }*/
 
+  
+
+  FloatingActionButton newEntryFab(BuildContext context){
+      if(image == null) {
+        return FloatingActionButton( 
+              onPressed: () {   
+                _getLocalImage(context);
+                
+              },
+              child: Icon(Icons.photo_camera),  );
+      } else {
+        return FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).pushNamed(FoodEntryS.routeName, arguments:image);
+                _clear();
+              },
+              child: Icon(Icons.photo_camera),  );
+      }                        
+  }
 }
+
 double paddings(BuildContext context) {
   if(MediaQuery.of(context).orientation == Orientation.landscape) {
     return MediaQuery.of(context).size.width * 0.05;
