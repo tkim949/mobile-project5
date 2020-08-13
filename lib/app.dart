@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-//
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_analytics/observer.dart';
 //import 'package:sentry/sentry.dart';
 import 'screens/food_detail_s.dart';
 import 'screens/food_entry_s.dart';
 import 'screens/food_list_s.dart';
-//import 'screens/food_camera.dart';
+
 
 
 class App extends StatelessWidget{
@@ -39,7 +38,7 @@ class App extends StatelessWidget{
     FoodEntryS.routeName: (context) => FoodEntryS(),
     FoodListS.routeName: (context) => FoodListS(),
     FoodDetailS.routeName: (context) => FoodDetailS(),
-    //FoodCamera.routeName: (context) => FoodCamera(),
+    
   };
 
   Widget build(BuildContext context) {
@@ -51,7 +50,7 @@ class App extends StatelessWidget{
       routes: App.routes, 
       //home: FoodListS(analytics: analytics,observer: observer,),
       home: FoodListS(),
-      //showSemanticsDebugger: true,
+      //showSemanticsDebugger: true, /* This is to see the Sematics debug mode! */
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: analytics)
       ],

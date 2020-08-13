@@ -5,16 +5,19 @@ import 'package:flutter/services.dart'; //for the orientation
 import 'package:sentry/sentry.dart' as s;
 import 'app.dart';
 
+/* To use Sentry */
+
 const DSN = 'https://6008b38d3e424a279904a258daa9d02e@o432809.ingest.sentry.io/5386834';
 final s.SentryClient sentry = s.SentryClient(dsn: DSN);
 
+
 /* flutter.dev/docs/cookbook/maintenance/error-reporting */
+/*  This is to use the analytics.  */
 
 bool get isInDebugMode {
   bool inDebugMode = false;
   assert(inDebugMode = true);
   return inDebugMode;
-
 }
 
 Future<void> _reportError(dynamic error, dynamic stackTrace) async {

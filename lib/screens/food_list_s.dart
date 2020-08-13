@@ -7,13 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:wasteagram/screens/food_entry_s.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../screens/food_detail_s.dart';
-//import '../models/food_entry.dart';
-//import 'package:timeago/timeago.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart';
-
-
-  
 
 
 class FoodListS extends StatefulWidget {
@@ -39,11 +34,19 @@ class _FoodListSState extends State<FoodListS> {
   PickedFile imageFile;
   //final GlobalKey<State> _keyLoader = new GlobalKey<State>();
   /*
-  bool _isLoading;
-  void initState() {
-    super.initState();
-    _isLoading = true;
+  bool _isLoading = true;
+  void _submit() {
+    //setState(() {
+    //  _isLoading = true;
+    //});
+    new Future.delayed(new Duration(seconds: 4), () {
+      setState( () {
+        _isLoading = false;
+      });
+    });
   } */
+
+  /* Pick an image from the gallery */
   //void _getLocalImage() async {
   Future<void> _getLocalImage(BuildContext context) async {
     //image = await ImagePicker.pickImage(source: ImageSource.gallery)
@@ -74,7 +77,9 @@ class _FoodListSState extends State<FoodListS> {
   void _clear() {
     setState(() => image = null);
   }
- 
+ /*Extra credit 
+ https://stackoverflow.comm/questions/52729497/
+ */
   int total = 0;
   void getNum() {
     Firestore.instance.collection('posts').snapshots().listen((snapshot) {
@@ -82,21 +87,21 @@ class _FoodListSState extends State<FoodListS> {
         tot + doc.data['quantity']);
       setState(() {total = tempTot;});
       //print('Total: $total');
-
     });
   }
 
   Widget build(BuildContext context) {
     //throw new StateError("New Error");
-    getNum();
+    getNum();  //Extra credit
     
     return Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
             title: 
               Column(
-              children: [Text("Food List Screen"),
-                        Text('Total items: $total', style: TextStyle(fontSize: paddings(context)*0.4)),
+              children: [
+                Text("Food List Screen"),
+                Text('Total items: $total', style: TextStyle(fontSize: paddings(context)*0.4)),
              ],),
             centerTitle: true,
          ),
@@ -114,50 +119,49 @@ class _FoodListSState extends State<FoodListS> {
     );
   }
 
-  Widget bodyStream(BuildContext context) {
-   
+/* Widget for Streambuilder that shows the list */
+  Widget bodyStream(BuildContext context) { 
     return StreamBuilder(         
-            stream: Firestore.instance.collection('posts').snapshots(),
-            builder: (content, snapshot) {
-              if(!snapshot.hasData) {
-                 return Center(child: CircularProgressIndicator(),);
-                   
-              }
-              else {
-                return Column(
-                  children: <Widget>
-                  [ Expanded(
-                    child: ListView.builder(
-                      key: Key('list'),
-                      itemCount: snapshot.data.documents.length,
-                      itemBuilder: (context, index) {
-                        var post = snapshot.data.documents[index];
-                        if(post != null) {
-                          return ListTile(
-                           title: Row(
-                             children: <Widget>[
-                               Expanded(child:Text(DateFormat('EEEE,').format(post['date'].toDate())),),
-                               Expanded(child: Text(DateFormat('MMMM d,').format(post['date'].toDate())),),
-                               Expanded(child: Text(DateFormat('y').format(post['date'].toDate())),),
-                               Expanded(child: Text(post['quantity'].toString(), textAlign: TextAlign.right,),),
-                               ],),
+        stream: Firestore.instance.collection('posts').snapshots(),
+        builder: (content, snapshot) {
+             
+          if(snapshot.hasData && snapshot.data.documents != null 
+                   && snapshot.data.documents.length >0) {
+            return Column(
+              children: <Widget>
+                [ Expanded(
+                  child: ListView.builder(
+                    key: Key('list'),
+                    itemCount: snapshot.data.documents.length,
+                    itemBuilder: (context, index) {
+                      var post = snapshot.data.documents[index];
+                      if(post != null) {
+                        return ListTile(
+                          title: Row(
+                          children: <Widget>[
+                            Expanded(child:Text(DateFormat('EEEE,').format(post['date'].toDate())),),
+                            Expanded(child: Text(DateFormat('MMMM d,').format(post['date'].toDate())),),
+                            Expanded(child: Text(DateFormat('y').format(post['date'].toDate())),),
+                            Expanded(child: Text(post['quantity'].toString(), textAlign: TextAlign.right,),),
+                              ],),
                                
-                            onTap: () {
+                          onTap: () {
                                 //throw new StateError("New Error");
-                                Navigator.of(context).pushNamed(FoodDetailS.routeName, arguments:post);
-                                }    
+                            Navigator.of(context).pushNamed(FoodDetailS.routeName, arguments:post);
+                            }    
                            );
-                         }
-                          return Center(child: CircularProgressIndicator());  
+                      }
+                      return Center(child: CircularProgressIndicator());  
                       
-                      },),)
+                },),)
 
-                  ],);  
-             } 
+            ],);  
+          } 
+          else{
+             return Center(child: CircularProgressIndicator(),);
           }
-       
-      );
-    
+       }   
+    );
   }
   /*
   Widget keepPI(BuildContext context) {
@@ -166,12 +170,13 @@ class _FoodListSState extends State<FoodListS> {
     return CircularProgressIndicator();
   }*/
 
-  
+  /* Button to go to the gallery to pick an image */
 
   FloatingActionButton newEntryFab(BuildContext context){
       if(image == null) {
         return FloatingActionButton( 
               onPressed: () {   
+               
                 _getLocalImage(context);
                 
               },

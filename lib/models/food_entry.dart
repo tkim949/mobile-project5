@@ -1,10 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Food {
-  //String id;
-  //String date;
+  
   Timestamp date;
-  //String date;
   double latitude;
   double longitude;
   String imageURL;
@@ -30,7 +28,6 @@ class Food {
     
     return {
       'date': date,
-      //'id':id,
       'latitude': latitude,
       'longitude': longitude,
       'imageURL': imageURL,

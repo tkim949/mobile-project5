@@ -9,9 +9,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 //import 'package:firebase_core/firebase_core.dart';
 import '../models/food_entry.dart';
 import 'package:location/location.dart';
-
 import 'dart:async';
+  /* https://medium.com/@sorami.asai/dart-flutter-how-to-send-logevent-to-firebase-analytics-d4d53f18853*/
+ /*  From the lecture of OSU */
 
+/* For the log event for the firebase */
 enum AnalyticsEventType {
   food_post,
 }
@@ -62,6 +64,8 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
     retrieveLocation();
   }
 
+  /*  Get latitude and longitude!   */
+
   void retrieveLocation() async {
     var locationService = Location();
     locationData = await locationService.getLocation();
@@ -72,6 +76,8 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
     await analytics.logEvent(name: 'create_post');
 
   }
+
+  /*  Get a number from the text field and check the validation   */
 
   Widget enterNumber() {
     //addDate();
@@ -111,10 +117,10 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
 
   }
 
-  Future getImageRef(String name) async{
-    
-    try {
-      
+  /*  Put the picked image into the firebase storage and get the url!  */
+
+  Future getImageRef(String name) async{   
+    try {  
       StorageReference storageReference =
       FirebaseStorage.instance.ref().child(name);
       StorageUploadTask uploadTask = storageReference.putFile(widget.image); //widget.image
@@ -130,7 +136,8 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
     }    
   }
   
-
+  /*  Get a time and change to Timestamp and store the time and latitude and logitude into the Food */
+  
   void addDate() async {
     //newfood.date = new Timestamp.fromMicrosecondsSinceEpoch(DateTime.now().millisecondsSinceEpoch);
     newfood.date = Timestamp.fromDate(new DateTime.now());
@@ -139,48 +146,49 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
     //await getImageRef(newfood.date.toDate().toString());
   }
 
+ /* Get a map of Food data and upload it in the firebase */
+
   Widget uploadButton(BuildContext context) {
      return FutureBuilder(
-           future: getImageRef(newfood.date.toDate().toString()),
-           builder: (context, snapshot) { 
-           return Expanded(
-                 child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
+        future: getImageRef(newfood.date.toDate().toString()),
+        builder: (context, snapshot) { 
+          return Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue,
                       //border: Border.all(width: paddings(context)*2, color:Colors.blue)
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: const Radius.circular(40.0),
-                        bottomRight: const Radius.circular(40.0),
-                      )
-                    ),
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Semantics(
-                        label: 'Upload button',
-                        enabled: true,
-                        button: true,
-                        onTapHint: 'Enables to upload a new post into firestore data and storage',
-                        child:RaisedButton(
-                          child: Icon(Icons.cloud_upload, size:paddings(context)*2),
+                  borderRadius: BorderRadius.only(
+                  bottomLeft: const Radius.circular(40.0),
+                  bottomRight: const Radius.circular(40.0),
+                  )
+                ),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                    child: Semantics(
+                      label: 'Upload button',
+                      enabled: true,
+                      button: true,
+                      onTapHint: 'Enables to upload a new post into firestore data and storage',
+                      child:RaisedButton(
+                        child: Icon(Icons.cloud_upload, size:paddings(context)*2),
                                         
-                          onPressed: (){
-                            if(formKey.currentState.validate()) {
-                                formKey.currentState.save();
+                        onPressed: (){
+                          if(formKey.currentState.validate()) {
+                            formKey.currentState.save();
                                   //addDate();
-                                Firestore.instance.collection('posts').add(newfood.toMap());
+                            Firestore.instance.collection('posts').add(newfood.toMap());
                                 //logPostCreated();
                                 //_analyticsParameter = {'post_upload': 1};
-                                Analytics.analyticsLogEvent(AnalyticsEventType.food_post, {'post_upload': 1});
-                                Navigator.of(context).pop();
-                            }
-                          },
+                            Analytics.analyticsLogEvent(AnalyticsEventType.food_post, {'post_upload': 1});
+                            Navigator.of(context).pop();
+                          }
+                        },
                       ),
                    ),
                   ),
                 ),
               );
            }
-    
         );
      }
 
@@ -210,11 +218,13 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
                         //image: true,
                         child: (widget.image == null) ? 
                           CircularProgressIndicator() :
-                          Image.file(widget.image, height: paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill),),),
+                          Image.file(widget.image, height: paddings(context)*7, 
+                                     width: paddings(context)*9, fit:BoxFit.fill),
+                        ),
+                   ),
                       
                           //Image.network(newfood.imageURL, height:paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill),),),
                   //loadImgURL(context);
-                  
                   SizedBox(height: paddings(context)*0.5),
                   enterNumber(),
                   SizedBox(height: paddings(context)*5),
@@ -235,20 +245,19 @@ class _FoodEntryFormState extends State<FoodEntryForm> {
   */
   Widget loadImgURL(BuildContext context) {
     return 
-         FutureBuilder(
-              future: getImageRef(newfood.date.toDate().toString()),
-              builder: (context, snapshot) {
-              if(snapshot.hasData){
-                return 
-                        Image.network(newfood.imageURL, height: paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill,
-                        loadingBuilder: (BuildContext context, Widget child,
-                                        ImageChunkEvent loadingProgress) {
-                                  if(loadingProgress == null) return child;
-                                  return Center(
-                                    child: CircularProgressIndicator(
-                                    value: loadingProgress.expectedTotalBytes != null
-                                         ? loadingProgress.cumulativeBytesLoaded /loadingProgress.expectedTotalBytes
-                                         : null,
+      FutureBuilder(
+          future: getImageRef(newfood.date.toDate().toString()),
+          builder: (context, snapshot) {
+            if(snapshot.hasData){
+              return 
+                Image.network(newfood.imageURL, height: paddings(context)*7, width: paddings(context)*9, fit:BoxFit.fill,
+                           loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent loadingProgress) {
+                              if(loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /loadingProgress.expectedTotalBytes
+                                        : null,
                                     ),
                                   );
                             } 
