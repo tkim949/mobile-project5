@@ -2,6 +2,10 @@
 
 A new Flutter project.
 
+This is originally for the school project, OSU.
+
+Application is for both android and ios but for the assignment, it is demonstrated for an Android phone.
+
 
 ![](android.gif)
 
